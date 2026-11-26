@@ -1,0 +1,42 @@
+name: Build Maddy AI Studio APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Create Android project
+        run: flutter create --platforms=android --org com.maddyai --project-name maddy_ai_studio build_app
+
+      - name: Copy app source
+        run: |
+          cp app/lib/main.dart build_app/lib/main.dart
+          cp app/pubspec.yaml build_app/pubspec.yaml
+          sed -i 's/android:label="maddy_ai_studio"/android:label="Maddy AI Studio"/' build_app/android/app/src/main/AndroidManifest.xml || true
+
+      - name: Install packages
+        working-directory: build_app
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: build_app
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Maddy-AI-Studio-APK
+          path: build_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
